@@ -11,8 +11,9 @@ from story_patterns.analysis.revision_drift import compare_revisions
 from story_patterns.analysis.votes import vote_distribution
 from story_patterns.analysis.sample_profile import build_sample_profile
 from story_patterns.analysis.crosstab import consensus_crosstab
+from story_patterns.analysis.weighting import build_weighted_comparison
 from story_patterns.catalog.history import lineage_warnings, revision_lineage
-from story_patterns.errors import ConflictError
+from story_patterns.errors import AnalysisError, ConflictError, NotFoundError
 
 
 def _consensus(votes: list[str], minimum: int) -> tuple[str | None, str]:
@@ -28,7 +29,7 @@ def _consensus(votes: list[str], minimum: int) -> tuple[str | None, str]:
 
 def build_report(stories: list[dict], decisions: dict[tuple[str, int], list[dict]],
                  tradition: str | None, minimum: int, origins: dict | None = None,
-                 adjudications: dict | None = None) -> dict[str, Any]:
+                 adjudications: dict | None = None, weight_spec: dict | None = None) -> dict[str, Any]:
     pattern_counts: Counter = Counter()
     outcome_counts: Counter = Counter()
     final_pattern_counts: Counter = Counter()
@@ -61,6 +62,8 @@ def build_report(stories: list[dict], decisions: dict[tuple[str, int], list[dict
         story_results.append({
             "story_id": story["story_id"], "revision": story["revision"],
             "title": story["title"], "tradition": story["tradition"],
+            "source_kind": story["source"]["kind"],
+            "material_period": story.get("material_period", "unspecified"),
             "pattern": pattern, "pattern_status": pattern_status,
             "youngest_outcome": outcome, "outcome_status": outcome_status,
             "final_pattern": final_pattern, "final_outcome": final_outcome,
@@ -70,9 +73,11 @@ def build_report(stories: list[dict], decisions: dict[tuple[str, int], list[dict
             "adjudication_evidence_event_ids": adjudication["evidence_event_ids"] if adjudication else [],
             "reviewer_count": len(votes),
         })
-    return {
+    result = {
         "criteria": {"tradition": tradition, "minimum_reviewers": minimum,
-                     "unclear_and_unknown_are_abstentions": True},
+                     "unclear_and_unknown_are_abstentions": True,
+                     "weight_spec_id": weight_spec["weight_spec_id"] if weight_spec else None,
+                     "weight_spec_version": weight_spec["version"] if weight_spec else None},
         "population": {"story_revisions": len(stories), "pattern_consensus": sum(pattern_counts.values()),
                        "outcome_consensus": sum(outcome_counts.values())},
         "coverage": {
@@ -104,21 +109,53 @@ def build_report(stories: list[dict], decisions: dict[tuple[str, int], list[dict
                 f"{story_id}@{revision}": sorted(batch_ids)
                 for (story_id, revision), batch_ids in sorted((origins or {}).items())
             },
+            "weight_spec": weight_spec,
         },
+        "weighted_comparison": None,
     }
+    if weight_spec is not None:
+        result["weighted_comparison"] = build_weighted_comparison(
+            stories, story_results, weight_spec, tradition
+        )
+    return result
 
 
 class ReportService:
     def __init__(self, store):
         self.store = store
 
-    def create(self, tradition: str | None, minimum: int) -> dict:
+    def _resolve_weight_spec(self, weight_spec_id: str | None, weight_spec_version: int | None) -> dict | None:
+        if weight_spec_id is None:
+            if weight_spec_version is not None:
+                raise AnalysisError("weight_spec_version requires weight_spec_id")
+            return None
+        if not isinstance(weight_spec_id, str) or not weight_spec_id.strip():
+            raise AnalysisError("weight_spec_id must be a non-empty label or omitted")
+        if weight_spec_version is not None and (type(weight_spec_version) is not int or weight_spec_version < 1):
+            raise AnalysisError("weight_spec_version must be a positive integer when provided")
+        if weight_spec_version is None:
+            versions = self.store.weight_spec_versions(weight_spec_id)
+            if len(versions) > 1:
+                raise AnalysisError(
+                    f"weight specification {weight_spec_id} has multiple registered versions "
+                    f"({', '.join(str(version) for version in versions)}); "
+                    "pass weight_spec_version to keep the report caliber explicit"
+                )
+        spec = self.store.weight_spec(weight_spec_id, weight_spec_version)
+        if spec is None:
+            target = f"{weight_spec_id} v{weight_spec_version}" if weight_spec_version else weight_spec_id
+            raise NotFoundError(f"weight specification {target} was not found")
+        return spec
+
+    def create(self, tradition: str | None, minimum: int,
+               weight_spec_id: str | None = None, weight_spec_version: int | None = None) -> dict:
         from story_patterns.analysis.cohorts import select_cohort, validate_minimum
 
         minimum = validate_minimum(minimum)
+        weight_spec = self._resolve_weight_spec(weight_spec_id, weight_spec_version)
         stories, decisions, origins, adjudications = self.store.analysis_snapshot(tradition)
         stories = select_cohort(stories, tradition)
-        result = build_report(stories, decisions, tradition, minimum, origins, adjudications)
+        result = build_report(stories, decisions, tradition, minimum, origins, adjudications, weight_spec)
         report_id = digest_json(result)[:24]
         request_digest = digest_json({"criteria": result["criteria"], "provenance": result["provenance"]})
         document = canonical_json({"report_id": report_id, **result})
@@ -135,10 +172,12 @@ class ReportService:
     def get(self, report_id: str) -> dict | None:
         return self.store.report_document(report_id)
 
-    def compare(self, minimum: int) -> dict:
+    def compare(self, minimum: int, weight_spec_id: str | None = None,
+                weight_spec_version: int | None = None) -> dict:
         from story_patterns.analysis.cohorts import validate_minimum
         from story_patterns.analysis.comparison import compare_traditions
 
         minimum = validate_minimum(minimum)
+        weight_spec = self._resolve_weight_spec(weight_spec_id, weight_spec_version)
         stories, decisions, _origins, adjudications = self.store.analysis_snapshot(None)
-        return compare_traditions(stories, decisions, minimum, adjudications)
+        return compare_traditions(stories, decisions, minimum, adjudications, weight_spec=weight_spec)

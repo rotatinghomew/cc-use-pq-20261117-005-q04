@@ -1,0 +1,138 @@
+{
+  "batch": {
+    "batch_id": "weighted-demo-v1",
+    "stories": [
+      {
+        "story_id": "rv-book-one",
+        "revision": 1,
+        "title": "河湾的两种回声",
+        "tradition": "river_valley",
+        "material_period": "early_20c",
+        "source": {"reference": "本地练习材料 R1（合成）", "kind": "book"},
+        "characters": [
+          {"character_id": "rv1-a", "name": "甲", "sibling_order": 1},
+          {"character_id": "rv1-b", "name": "乙", "sibling_order": 2},
+          {"character_id": "rv1-c", "name": "丙", "sibling_order": 3}
+        ],
+        "events": [
+          {"event_id": "rv1-e1", "sequence": 1, "actor_id": "rv1-a", "action": "先试渡口", "consequence": "木筏散开", "evidence": "练习材料 R1 片段一"},
+          {"event_id": "rv1-e2", "sequence": 2, "actor_id": "rv1-b", "action": "再试浅滩", "consequence": "水面回旋", "evidence": "练习材料 R1 片段二"},
+          {"event_id": "rv1-e3", "sequence": 3, "actor_id": "rv1-c", "action": "最后结绳", "consequence": "众人渡河", "evidence": "练习材料 R1 片段三"}
+        ]
+      },
+      {
+        "story_id": "rv-book-two",
+        "revision": 1,
+        "title": "磨坊主的账本",
+        "tradition": "river_valley",
+        "material_period": "early_20c",
+        "source": {"reference": "本地练习材料 R2（合成）", "kind": "book"},
+        "characters": [
+          {"character_id": "rv2-a", "name": "甲", "sibling_order": 1},
+          {"character_id": "rv2-b", "name": "乙", "sibling_order": 2},
+          {"character_id": "rv2-c", "name": "丙", "sibling_order": 3}
+        ],
+        "events": [
+          {"event_id": "rv2-e1", "sequence": 1, "actor_id": "rv2-a", "action": "扣下磨坊钥匙", "consequence": "弟妹无法开工", "evidence": "练习材料 R2 片段一"},
+          {"event_id": "rv2-e2", "sequence": 2, "actor_id": "rv2-c", "action": "核对旧账", "consequence": "查出隐瞒", "evidence": "练习材料 R2 片段二"}
+        ]
+      },
+      {
+        "story_id": "rv-oral-one",
+        "revision": 1,
+        "title": "渡口口述记",
+        "tradition": "river_valley",
+        "material_period": "early_20c",
+        "source": {"reference": "本地练习材料 R3（合成口述记录）", "kind": "oral_record"},
+        "characters": [
+          {"character_id": "rv3-a", "name": "甲", "sibling_order": 1},
+          {"character_id": "rv3-b", "name": "乙", "sibling_order": 2},
+          {"character_id": "rv3-c", "name": "丙", "sibling_order": 3}
+        ],
+        "events": [
+          {"event_id": "rv3-e1", "sequence": 1, "actor_id": "rv3-b", "action": "探路", "consequence": "找到浅滩", "evidence": "练习材料 R3 片段一"},
+          {"event_id": "rv3-e2", "sequence": 2, "actor_id": "rv3-c", "action": "设渡标", "consequence": "后来者受益", "evidence": "练习材料 R3 片段二"}
+        ]
+      },
+      {
+        "story_id": "mp-oral-one",
+        "revision": 1,
+        "title": "山口分水",
+        "tradition": "mountain_pass",
+        "material_period": "late_20c",
+        "source": {"reference": "本地练习材料 M1（合成口述记录）", "kind": "oral_record"},
+        "characters": [
+          {"character_id": "mp1-a", "name": "甲", "sibling_order": 1},
+          {"character_id": "mp1-b", "name": "乙", "sibling_order": 2},
+          {"character_id": "mp1-c", "name": "丙", "sibling_order": 3}
+        ],
+        "events": [
+          {"event_id": "mp1-e1", "sequence": 1, "actor_id": "mp1-a", "action": "独占水源", "consequence": "弟妹无水", "evidence": "练习材料 M1 片段一"},
+          {"event_id": "mp1-e2", "sequence": 2, "actor_id": "mp1-c", "action": "另寻泉眼", "consequence": "全家解困", "evidence": "练习材料 M1 片段二"}
+        ]
+      },
+      {
+        "story_id": "mp-oral-two",
+        "revision": 1,
+        "title": "山口口述续记",
+        "tradition": "mountain_pass",
+        "material_period": "late_20c",
+        "source": {"reference": "本地练习材料 M2（合成口述记录）", "kind": "oral_record"},
+        "characters": [
+          {"character_id": "mp2-a", "name": "甲", "sibling_order": 1},
+          {"character_id": "mp2-b", "name": "乙", "sibling_order": 2},
+          {"character_id": "mp2-c", "name": "丙", "sibling_order": 3}
+        ],
+        "events": [
+          {"event_id": "mp2-e1", "sequence": 1, "actor_id": "mp2-a", "action": "藏起粮袋", "consequence": "弟妹挨饿", "evidence": "练习材料 M2 片段一"},
+          {"event_id": "mp2-e2", "sequence": 2, "actor_id": "mp2-b", "action": "向邻家借粮", "consequence": "暂度难关", "evidence": "练习材料 M2 片段二"}
+        ]
+      },
+      {
+        "story_id": "mp-book-one",
+        "revision": 1,
+        "title": "山口采录手记",
+        "tradition": "mountain_pass",
+        "material_period": "late_20c",
+        "source": {"reference": "本地练习材料 M3（合成）", "kind": "book"},
+        "characters": [
+          {"character_id": "mp3-a", "name": "甲", "sibling_order": 1},
+          {"character_id": "mp3-b", "name": "乙", "sibling_order": 2},
+          {"character_id": "mp3-c", "name": "丙", "sibling_order": 3}
+        ],
+        "events": [
+          {"event_id": "mp3-e1", "sequence": 1, "actor_id": "mp3-c", "action": "先试山路", "consequence": "道路中断", "evidence": "练习材料 M3 片段一"},
+          {"event_id": "mp3-e2", "sequence": 2, "actor_id": "mp3-a", "action": "改走河谷", "consequence": "仍受阻", "evidence": "练习材料 M3 片段二"},
+          {"event_id": "mp3-e3", "sequence": 3, "actor_id": "mp3-b", "action": "分头求援", "consequence": "队伍失散", "evidence": "练习材料 M3 片段三"}
+        ]
+      }
+    ]
+  },
+  "weight_spec": {
+    "weight_spec_id": "exercise-frame-2026a",
+    "version": 1,
+    "basis": "课程练习组预先写定的三分层比例：传统 × 来源类型 × 材料时期。比例只描述这份练习材料的目标构成，不来自新闻抽样，也不代表任何更大总体。修订比例时必须发布新的 version。",
+    "prepared_by": "teaching-group",
+    "strata": [
+      {"tradition": "river_valley", "source_kind": "book", "material_period": "early_20c", "proportion": 0.2},
+      {"tradition": "river_valley", "source_kind": "oral_record", "material_period": "early_20c", "proportion": 0.15},
+      {"tradition": "mountain_pass", "source_kind": "oral_record", "material_period": "late_20c", "proportion": 0.5},
+      {"tradition": "mountain_pass", "source_kind": "book", "material_period": "late_20c", "proportion": 0.15}
+    ]
+  },
+  "decisions": [
+    {"decision_id": "w-rv-book-one-a", "story_id": "rv-book-one", "story_revision": 1, "annotator": "reader-a", "sequence": 1, "pattern": "parallel", "youngest_outcome": "wins", "evidence_event_ids": ["rv1-e1", "rv1-e2", "rv1-e3"]},
+    {"decision_id": "w-rv-book-one-b", "story_id": "rv-book-one", "story_revision": 1, "annotator": "reader-b", "sequence": 1, "pattern": "parallel", "youngest_outcome": "wins", "evidence_event_ids": ["rv1-e3"]},
+    {"decision_id": "w-rv-book-two-a", "story_id": "rv-book-two", "story_revision": 1, "annotator": "reader-a", "sequence": 1, "pattern": "harm", "youngest_outcome": "loses", "evidence_event_ids": ["rv2-e1", "rv2-e2"]},
+    {"decision_id": "w-rv-book-two-b", "story_id": "rv-book-two", "story_revision": 1, "annotator": "reader-b", "sequence": 1, "pattern": "harm", "youngest_outcome": "loses", "evidence_event_ids": ["rv2-e1"]},
+    {"decision_id": "w-rv-oral-one-a", "story_id": "rv-oral-one", "story_revision": 1, "annotator": "reader-a", "sequence": 1, "pattern": "parallel", "youngest_outcome": "wins", "evidence_event_ids": ["rv3-e1", "rv3-e2"]},
+    {"decision_id": "w-rv-oral-one-b", "story_id": "rv-oral-one", "story_revision": 1, "annotator": "reader-b", "sequence": 1, "pattern": "parallel", "youngest_outcome": "wins", "evidence_event_ids": ["rv3-e2"]},
+    {"decision_id": "w-mp-oral-one-a", "story_id": "mp-oral-one", "story_revision": 1, "annotator": "reader-a", "sequence": 1, "pattern": "harm", "youngest_outcome": "wins", "evidence_event_ids": ["mp1-e1", "mp1-e2"]},
+    {"decision_id": "w-mp-oral-one-b", "story_id": "mp-oral-one", "story_revision": 1, "annotator": "reader-b", "sequence": 1, "pattern": "harm", "youngest_outcome": "wins", "evidence_event_ids": ["mp1-e1"]},
+    {"decision_id": "w-mp-oral-two-a", "story_id": "mp-oral-two", "story_revision": 1, "annotator": "reader-a", "sequence": 1, "pattern": "harm", "youngest_outcome": "wins", "evidence_event_ids": ["mp2-e1", "mp2-e2"]},
+    {"decision_id": "w-mp-oral-two-b", "story_id": "mp-oral-two", "story_revision": 1, "annotator": "reader-b", "sequence": 1, "pattern": "harm", "youngest_outcome": "wins", "evidence_event_ids": ["mp2-e2"]},
+    {"decision_id": "w-mp-book-one-a", "story_id": "mp-book-one", "story_revision": 1, "annotator": "reader-a", "sequence": 1, "pattern": "parallel", "youngest_outcome": "loses", "evidence_event_ids": ["mp3-e1", "mp3-e2", "mp3-e3"]},
+    {"decision_id": "w-mp-book-one-b", "story_id": "mp-book-one", "story_revision": 1, "annotator": "reader-b", "sequence": 1, "pattern": "parallel", "youngest_outcome": "loses", "evidence_event_ids": ["mp3-e3"]}
+  ],
+  "minimum_reviewers": 2
+}

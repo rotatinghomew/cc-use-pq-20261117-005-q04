@@ -24,6 +24,9 @@ def build_sample_profile(stories: list[dict]) -> dict:
         "story_revisions": len(stories),
         "traditions": _sorted_counts(story["tradition"] for story in stories),
         "source_kinds": _sorted_counts(story["source"]["kind"] for story in stories),
+        "material_periods": _sorted_counts(
+            story.get("material_period", "unspecified") for story in stories
+        ),
         "sibling_roster_sizes": _sorted_counts(sibling_counts),
         "event_counts": _sorted_counts(event_counts),
         "events_by_sibling_order": _sorted_counts(events_by_order.elements()),
@@ -31,6 +34,11 @@ def build_sample_profile(stories: list[dict]) -> dict:
             tradition: {kind: counts[kind] for kind in sorted(counts)}
             for tradition, counts in sorted(source_by_tradition.items())
         },
+        "strata": _sorted_counts(
+            f"{story['tradition']} | {story['source']['kind']} | "
+            f"{story.get('material_period', 'unspecified')}"
+            for story in stories
+        ),
         "total_events": sum(event_counts),
         "total_characters": sum(sibling_counts),
         "mean_events_per_story": round(sum(event_counts) / len(event_counts), 3) if event_counts else None,

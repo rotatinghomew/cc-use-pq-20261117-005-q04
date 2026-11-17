@@ -36,10 +36,19 @@ def parser() -> argparse.ArgumentParser:
     history.add_argument("--database", required=True)
     history.add_argument("--story-id", required=True)
     history.add_argument("--revision", required=True, type=int)
-    report = commands.add_parser("report", help="compute consensus with explicit coverage")
+    report = commands.add_parser(
+        "report", help="compute consensus with explicit coverage and optional stratified weights")
     report.add_argument("--database", required=True)
     report.add_argument("--tradition")
     report.add_argument("--minimum-reviewers", type=int, default=2)
+    report.add_argument("--weight-spec-id")
+    report.add_argument("--weight-spec-version", type=int)
+    register_weights = commands.add_parser(
+        "register-weights", help="register an immutable stratified weight specification")
+    register_weights.add_argument("--database", required=True)
+    register_weights.add_argument("--file", required=True)
+    weights = commands.add_parser("weights", help="list registered weight specifications")
+    weights.add_argument("--database", required=True)
     queue = commands.add_parser("queue", help="show stories needing review or evidence")
     queue.add_argument("--database", required=True)
     queue.add_argument("--tradition")
@@ -55,9 +64,12 @@ def parser() -> argparse.ArgumentParser:
     preview = commands.add_parser("preview", help="validate all rows without writing to SQLite")
     preview.add_argument("--file", required=True)
     preview.add_argument("--format", choices=("json", "ndjson"), required=True)
-    compare = commands.add_parser("compare", help="compare tradition cohorts descriptively")
+    compare = commands.add_parser(
+        "compare", help="compare tradition cohorts descriptively, optionally stratified-weighted")
     compare.add_argument("--database", required=True)
     compare.add_argument("--minimum-reviewers", type=int, default=2)
+    compare.add_argument("--weight-spec-id")
+    compare.add_argument("--weight-spec-version", type=int)
     lineage = commands.add_parser("lineage", help="show available story revisions")
     lineage.add_argument("--database", required=True)
     manifest = commands.add_parser("manifest", help="summarize imported batches and source references")
@@ -91,7 +103,12 @@ def execute(arguments: argparse.Namespace) -> dict:
     if arguments.command == "history":
         return app.review_history(arguments.story_id, arguments.revision)
     if arguments.command == "report":
-        return app.create_report(arguments.tradition, arguments.minimum_reviewers)
+        return app.create_report(arguments.tradition, arguments.minimum_reviewers,
+                                 arguments.weight_spec_id, arguments.weight_spec_version)
+    if arguments.command == "register-weights":
+        return app.register_weight_spec(read_json(arguments.file))
+    if arguments.command == "weights":
+        return {"weight_specs": app.list_weight_specs()}
     if arguments.command == "queue":
         return app.review_queue(arguments.minimum_reviewers, arguments.tradition)
     if arguments.command == "export":
@@ -112,7 +129,8 @@ def execute(arguments: argparse.Namespace) -> dict:
         rows = read_story_file(arguments.file, arguments.format)
         return app.preview_stories(rows)
     if arguments.command == "compare":
-        return app.compare_traditions(arguments.minimum_reviewers)
+        return app.compare_traditions(arguments.minimum_reviewers,
+                                      arguments.weight_spec_id, arguments.weight_spec_version)
     if arguments.command == "lineage":
         return {"stories": app.revision_lineage()}
     if arguments.command == "manifest":
@@ -124,8 +142,15 @@ def execute(arguments: argparse.Namespace) -> dict:
     fixture = read_json(arguments.fixture)
     imported = app.import_batch(fixture["batch"])
     decisions = [app.record_decision(item) for item in fixture["decisions"]]
-    report = app.create_report(fixture.get("tradition"), fixture.get("minimum_reviewers", 2))
-    return {"import": imported, "decisions_recorded": len(decisions), "report": report}
+    weights = None
+    if fixture.get("weight_spec"):
+        weights = app.register_weight_spec(fixture["weight_spec"])
+    report = app.create_report(
+        fixture.get("tradition"), fixture.get("minimum_reviewers", 2),
+        fixture.get("weight_spec", {}).get("weight_spec_id") if fixture.get("weight_spec") else None,
+        fixture.get("weight_spec", {}).get("version") if fixture.get("weight_spec") else None,
+    )
+    return {"import": imported, "decisions_recorded": len(decisions), "weight_spec": weights, "report": report}
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -1,0 +1,12 @@
+{
+  "weight_spec_id": "exercise-frame-2026a",
+  "version": 2,
+  "basis": "同一练习组在课堂讨论后修订的分层比例：提高山口口述材料占比，以考察加权结论对比例设定的敏感度。比例仍只描述练习材料的目标构成，不来自新闻抽样，也不代表任何更大总体。",
+  "prepared_by": "teaching-group",
+  "strata": [
+    {"tradition": "river_valley", "source_kind": "book", "material_period": "early_20c", "proportion": 0.1},
+    {"tradition": "river_valley", "source_kind": "oral_record", "material_period": "early_20c", "proportion": 0.1},
+    {"tradition": "mountain_pass", "source_kind": "oral_record", "material_period": "late_20c", "proportion": 0.7},
+    {"tradition": "mountain_pass", "source_kind": "book", "material_period": "late_20c", "proportion": 0.1}
+  ]
+}

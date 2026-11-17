@@ -5,7 +5,8 @@ from collections import defaultdict
 from story_patterns.analysis.report import build_report
 
 
-def compare_traditions(stories: list[dict], decisions: dict, minimum: int, adjudications: dict | None = None) -> dict:
+def compare_traditions(stories: list[dict], decisions: dict, minimum: int, adjudications: dict | None = None,
+                       weight_spec: dict | None = None) -> dict:
     grouped = defaultdict(list)
     for story in stories:
         grouped[story["tradition"]].append(story)
@@ -16,7 +17,7 @@ def compare_traditions(stories: list[dict], decisions: dict, minimum: int, adjud
         cohort_decisions = {identity: decisions.get(identity, []) for identity in identities}
         cohort_adjudications = {identity: adjudications.get(identity) for identity in identities} if adjudications else None
         summary = build_report(cohort, cohort_decisions, tradition, minimum,
-                               adjudications=cohort_adjudications)
+                               adjudications=cohort_adjudications, weight_spec=weight_spec)
         pattern_denominator = summary["population"]["pattern_consensus"]
         outcome_denominator = summary["population"]["outcome_consensus"]
         final_pattern_denominator = sum(summary["final_pattern_counts"].values())
@@ -44,10 +45,20 @@ def compare_traditions(stories: list[dict], decisions: dict, minimum: int, adjud
                 key: count / final_outcome_denominator
                 for key, count in summary["final_outcome_counts"].items()
             } if final_outcome_denominator else {},
+            "weighted_comparison": summary.get("weighted_comparison"),
         })
+    interpretation = "Rates use consensus labels only; coverage and denominators must be reviewed before comparison."
+    if weight_spec is not None:
+        interpretation += (
+            " Weighted rates renormalize each tradition cohort to the strata that fall inside it; "
+            "they cannot be combined into a single unfiltered estimate without recomputing the "
+            "unfiltered report."
+        )
     return {
         "method": "descriptive comparison of independently filtered cohorts",
         "minimum_reviewers": minimum,
+        "weight_spec_id": weight_spec["weight_spec_id"] if weight_spec else None,
+        "weight_spec_version": weight_spec["version"] if weight_spec else None,
         "groups": rows,
-        "interpretation_limit": "Rates use consensus labels only; coverage and denominators must be reviewed before comparison.",
+        "interpretation_limit": interpretation,
     }

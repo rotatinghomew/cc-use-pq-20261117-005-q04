@@ -33,6 +33,9 @@ def normalize_story(raw: Any) -> dict[str, Any]:
     story_id = _text(raw.get("story_id"), "story_id", 100)
     title = _text(raw.get("title"), "title", 240)
     tradition = _text(raw.get("tradition"), "tradition", 120)
+    material_period = raw.get("material_period")
+    if material_period is not None:
+        material_period = _text(material_period, "material_period", 120)
     revision = raw.get("revision")
     if type(revision) is not int or revision < 1:
         raise ValidationError("revision must be a positive integer")
@@ -100,6 +103,7 @@ def normalize_story(raw: Any) -> dict[str, Any]:
         "revision": revision,
         "title": title,
         "tradition": tradition,
+        "material_period": material_period or "unspecified",
         "source": {"reference": source_ref, "kind": source_kind},
         "characters": sorted(normalized_characters, key=lambda item: item["sibling_order"]),
         "events": sorted(normalized_events, key=lambda item: item["sequence"]),

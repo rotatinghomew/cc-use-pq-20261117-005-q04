@@ -19,8 +19,17 @@ class StoryPatternApplication:
     def record_decision(self, decision: dict) -> dict:
         return self.review.record_decision(decision)
 
-    def create_report(self, tradition: str | None = None, minimum_reviewers: int = 2) -> dict:
-        return self.reports.create(tradition, minimum_reviewers)
+    def create_report(self, tradition: str | None = None, minimum_reviewers: int = 2,
+                      weight_spec_id: str | None = None, weight_spec_version: int | None = None) -> dict:
+        return self.reports.create(tradition, minimum_reviewers, weight_spec_id, weight_spec_version)
+
+    def register_weight_spec(self, record: dict) -> dict:
+        from story_patterns.analysis.weighting import WeightSpecService
+
+        return WeightSpecService(self.store).register(record)
+
+    def list_weight_specs(self) -> list[dict]:
+        return self.store.list_weight_specs()
 
     def review_queue(self, minimum_reviewers: int = 2, tradition: str | None = None) -> dict:
         return self.review.queue(minimum_reviewers, tradition)
@@ -40,8 +49,10 @@ class StoryPatternApplication:
     def record_adjudication(self, record: dict) -> dict:
         return self.review.record_adjudication(record)
 
-    def compare_traditions(self, minimum_reviewers: int = 2) -> dict:
-        return self.reports.compare(minimum_reviewers)
+    def compare_traditions(self, minimum_reviewers: int = 2,
+                           weight_spec_id: str | None = None,
+                           weight_spec_version: int | None = None) -> dict:
+        return self.reports.compare(minimum_reviewers, weight_spec_id, weight_spec_version)
 
     def search_stories(self, **criteria) -> list[dict]:
         return self.catalog.search(**criteria)

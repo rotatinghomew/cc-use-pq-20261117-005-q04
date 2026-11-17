@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS stories (
     revision INTEGER NOT NULL CHECK(revision > 0),
     title TEXT NOT NULL,
     tradition TEXT NOT NULL,
+    material_period TEXT NOT NULL DEFAULT 'unspecified',
     source_kind TEXT NOT NULL,
     document TEXT NOT NULL,
     PRIMARY KEY(story_id, revision)
@@ -65,7 +66,19 @@ CREATE TABLE IF NOT EXISTS reports (
     request_digest TEXT NOT NULL,
     document TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS weight_specs (
+    weight_spec_id TEXT NOT NULL,
+    version INTEGER NOT NULL CHECK(version > 0),
+    digest TEXT NOT NULL,
+    document TEXT NOT NULL,
+    PRIMARY KEY(weight_spec_id, version)
+);
 """
+
+
+SCHEMA_MIGRATIONS = (
+    "ALTER TABLE stories ADD COLUMN material_period TEXT NOT NULL DEFAULT 'unspecified'",
+)
 
 
 class StoryStore:
@@ -88,8 +101,54 @@ class StoryStore:
         try:
             connection.execute("PRAGMA journal_mode = WAL")
             connection.executescript(SCHEMA)
+            columns = {row["name"] for row in connection.execute("PRAGMA table_info(stories)")}
+            added = False
+            for migration in SCHEMA_MIGRATIONS:
+                column = migration.split("ADD COLUMN ", 1)[1].split(" ", 1)[0]
+                if column not in columns:
+                    connection.execute(migration)
+                    added = True
+            if added:
+                self._backfill_material_period(connection)
         finally:
             connection.close()
+
+    def _backfill_material_period(self, connection: sqlite3.Connection) -> None:
+        """Add the new stratum field to legacy story documents and batch digests.
+
+        Saved reports are intentionally left untouched: they reference fixed
+        story revisions and embed their own analysis content.
+        """
+        from story_patterns.catalog.validate import canonical_json, digest_json, normalize_story
+
+        changed = False
+        for row in connection.execute("SELECT story_id, revision, document FROM stories").fetchall():
+            document = json.loads(row["document"])
+            if "material_period" in document:
+                continue
+            document["material_period"] = "unspecified"
+            connection.execute(
+                "UPDATE stories SET material_period=?, document=? WHERE story_id=? AND revision=?",
+                ("unspecified", canonical_json(document), row["story_id"], row["revision"]),
+            )
+            changed = True
+        if not changed:
+            return
+        for batch in connection.execute("SELECT batch_id FROM import_batches").fetchall():
+            batch_id = batch["batch_id"]
+            identities = connection.execute(
+                "SELECT story_id, revision FROM batch_stories WHERE batch_id=? ORDER BY story_id, revision",
+                (batch_id,),
+            ).fetchall()
+            stories = []
+            for identity in identities:
+                row = connection.execute(
+                    "SELECT document FROM stories WHERE story_id=? AND revision=?",
+                    (identity["story_id"], identity["revision"]),
+                ).fetchone()
+                stories.append(normalize_story(json.loads(row["document"])))
+            digest = digest_json({"batch_id": batch_id, "stories": stories})
+            connection.execute("UPDATE import_batches SET digest=? WHERE batch_id=?", (digest, batch_id))
 
     @contextmanager
     def transaction(self):
@@ -234,7 +293,43 @@ class StoryStore:
                 "adjudications": [dict(row) for row in connection.execute(
                     "SELECT * FROM adjudications ORDER BY adjudication_id")],
                 "reports": [dict(row) for row in connection.execute("SELECT * FROM reports ORDER BY report_id")],
+                "weight_specs": [dict(row) for row in connection.execute(
+                    "SELECT * FROM weight_specs ORDER BY weight_spec_id, version")],
             }
+
+    def weight_spec(self, weight_spec_id: str, version: int | None = None) -> dict | None:
+        with self.read_connection() as connection:
+            if version is None:
+                row = connection.execute(
+                    "SELECT document FROM weight_specs WHERE weight_spec_id=? ORDER BY version DESC LIMIT 1",
+                    (weight_spec_id,),
+                ).fetchone()
+            else:
+                row = connection.execute(
+                    "SELECT document FROM weight_specs WHERE weight_spec_id=? AND version=?",
+                    (weight_spec_id, version),
+                ).fetchone()
+        return json.loads(row["document"]) if row else None
+
+    def weight_spec_versions(self, weight_spec_id: str) -> list[int]:
+        with self.read_connection() as connection:
+            rows = connection.execute(
+                "SELECT version FROM weight_specs WHERE weight_spec_id=? ORDER BY version",
+                (weight_spec_id,),
+            ).fetchall()
+        return [row["version"] for row in rows]
+
+    def list_weight_specs(self) -> list[dict]:
+        with self.read_connection() as connection:
+            rows = connection.execute(
+                "SELECT weight_spec_id, version, digest, document FROM weight_specs "
+                "ORDER BY weight_spec_id, version"
+            ).fetchall()
+        return [
+            {key: row[key] for key in ("weight_spec_id", "version", "digest")}
+            | {"spec": json.loads(row["document"])}
+            for row in rows
+        ]
 
     def report_document(self, report_id: str) -> dict | None:
         with self.read_connection() as connection:

@@ -28,6 +28,22 @@ PYTHONPATH=src python -m story_patterns.cli demo --database /tmp/story-patterns.
 
 报告分别统计“平行型/加害型”判断和最小者结局判断。`unclear` 与 `unknown` 不进入对应投票，但覆盖表会保留同意、分歧和样本不足数量。报告列出参与故事修订及判断编号，便于复核。数据库仅保存在用户指定的本地路径。
 
+## 分层加权
+
+故事记录可带 `material_period`（材料时期；缺省为 `unspecified`）。`register-weights` 登记不可变的分层比例规格（传统 × 来源类型 × 材料时期），`weights` 列出已登记版本。`report` 与 `compare` 接受 `--weight-spec-id` 与 `--weight-spec-version`，在原始计数之外并列输出加权结果。
+
+- 加权分母是该轴上有共识标签的故事权重之和，不是原始样本数。
+- 声明比例为 0 的层明确记为排除项；样本中出现规格未覆盖的层、或没有指定多个版本中的哪一个，都直接报错。
+- 筛选某个传统时，只对该传统内的层重新归一化，并在输出中标记 `renormalized_to_filter`。
+- 修订比例须登记更高 `version`；已保存报告嵌入当时的完整规格与摘要，口径不会改变。
+- 权重仅描述这批练习材料的构成，不估计新闻文章或任何更大总体。
+
+`demo` 可直接重放 `fixtures/weighted_demo.json`（含 v1 比例）。完整复核流程会另行登记修订版 v2 并对照三种口径，见 [docs/weighted-review.md](docs/weighted-review.md)：
+
+```sh
+PYTHONPATH=src python examples/run_weighted_example.py --output /tmp/weighted-review
+```
+
 演示文件完全由本地合成材料构成，并非新闻报道或已出版故事的原文。
 
 ## 检查
@@ -36,4 +52,6 @@ PYTHONPATH=src python -m story_patterns.cli demo --database /tmp/story-patterns.
 PYTHONPATH=src python -m unittest discover -s tests -v
 PYTHONPATH=src python -m compileall -q src
 PYTHONPATH=src python -m story_patterns.cli demo --database /tmp/story-patterns-check.sqlite3 --fixture fixtures/demo.json
+PYTHONPATH=src python -m story_patterns.cli demo --database /tmp/story-patterns-weighted.sqlite3 --fixture fixtures/weighted_demo.json
+rm -rf /tmp/weighted-review && PYTHONPATH=src python examples/run_weighted_example.py --output /tmp/weighted-review
 ```

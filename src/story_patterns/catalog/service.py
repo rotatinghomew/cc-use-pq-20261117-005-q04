@@ -32,10 +32,10 @@ class CatalogService:
             )
             for story in stories:
                 connection.execute(
-                    "INSERT OR IGNORE INTO stories(story_id, revision, title, tradition, source_kind, document) "
-                    "VALUES(?,?,?,?,?,?)",
+                    "INSERT OR IGNORE INTO stories(story_id, revision, title, tradition, material_period, "
+                    "source_kind, document) VALUES(?,?,?,?,?,?,?)",
                     (story["story_id"], story["revision"], story["title"], story["tradition"],
-                     story["source"]["kind"], canonical_json(story)),
+                     story["material_period"], story["source"]["kind"], canonical_json(story)),
                 )
                 connection.execute(
                     "INSERT INTO batch_stories(batch_id, story_id, revision) VALUES(?,?,?)",

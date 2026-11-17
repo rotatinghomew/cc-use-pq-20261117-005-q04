@@ -7,6 +7,7 @@ from story_patterns.catalog.validate import digest_json, normalize_story
 from story_patterns.errors import ValidationError
 from story_patterns.review.adjudication import normalize_adjudication
 from story_patterns.review.validate import normalize_decision
+from story_patterns.analysis.weighting import normalize_weight_spec
 
 
 def audit_catalog(snapshot: dict) -> dict:
@@ -20,8 +21,9 @@ def audit_catalog(snapshot: dict) -> dict:
         except (json.JSONDecodeError, ValidationError, TypeError) as error:
             issues.append(_issue("story", identity, f"invalid story document: {error}"))
             continue
-        if normalized != document or (normalized["title"], normalized["tradition"], normalized["source"]["kind"]) != (
-                row["title"], row["tradition"], row["source_kind"]):
+        if normalized != document or (normalized["title"], normalized["tradition"],
+                                      normalized["material_period"], normalized["source"]["kind"]) != (
+                row["title"], row["tradition"], row["material_period"], row["source_kind"]):
             issues.append(_issue("story", identity, "document and indexed columns disagree"))
         stories[identity] = normalized
     batch_rows = {row["batch_id"]: row for row in snapshot["batches"]}
@@ -77,6 +79,19 @@ def audit_catalog(snapshot: dict) -> dict:
     story_keys = {f"{story_id}@{revision}" for story_id, revision in stories}
     decision_ids = {row["decision_id"] for row in snapshot["decisions"]}
     adjudication_ids = {row["adjudication_id"] for row in snapshot["adjudications"]}
+    weight_specs = {}
+    for row in snapshot.get("weight_specs", []):
+        key = (row["weight_spec_id"], row["version"])
+        try:
+            document = json.loads(row["document"])
+            if normalize_weight_spec(document) != document:
+                issues.append(_issue("weight_spec", key, "stored weight specification is not canonical"))
+            elif digest_json(document) != row["digest"]:
+                issues.append(_issue("weight_spec", key, "stored digest does not match content"))
+            else:
+                weight_specs[key] = document
+        except (json.JSONDecodeError, ValidationError, TypeError) as error:
+            issues.append(_issue("weight_spec", key, f"invalid weight specification: {error}"))
     for row in snapshot["reports"]:
         try:
             document = json.loads(row["document"])
@@ -94,6 +109,17 @@ def audit_catalog(snapshot: dict) -> dict:
             for identity, batch_ids in provenance.get("batch_ids_by_story", {}).items():
                 if identity not in story_keys or not set(batch_ids).issubset(batch_rows):
                     issues.append(_issue("report", row["report_id"], "references missing batch provenance"))
+            spec = provenance.get("weight_spec")
+            if spec is not None:
+                key = (spec.get("weight_spec_id"), spec.get("version"))
+                if key not in weight_specs:
+                    issues.append(_issue("report", row["report_id"], "references missing weight specification"))
+                elif weight_specs[key] != spec:
+                    issues.append(_issue("report", row["report_id"],
+                                         "embedded weight specification differs from registered content"))
+            elif document.get("weighted_comparison") is not None:
+                issues.append(_issue("report", row["report_id"],
+                                     "weighted comparison has no embedded weight specification"))
         except (json.JSONDecodeError, KeyError, TypeError) as error:
             issues.append(_issue("report", row["report_id"], f"invalid report document: {error}"))
     issues.sort(key=lambda item: (item["scope"], str(item["identity"]), item["problem"]))
@@ -101,6 +127,7 @@ def audit_catalog(snapshot: dict) -> dict:
             "batches_checked": len(snapshot["batches"]), "decisions_checked": len(snapshot["decisions"]),
             "batch_links_checked": len(snapshot["batch_stories"]),
             "adjudications_checked": len(snapshot["adjudications"]), "reports_checked": len(snapshot["reports"]),
+            "weight_specs_checked": len(snapshot.get("weight_specs", [])),
             "issue_count": len(issues), "issues": issues}
 
 

@@ -39,14 +39,33 @@ def export_csv(report: dict, path: str | Path, overwrite: bool = False) -> Path:
     from io import StringIO
 
     buffer = StringIO(newline="")
-    columns = ["story_id", "revision", "title", "tradition", "pattern", "pattern_status",
+    columns = ["story_id", "revision", "title", "tradition", "source_kind", "material_period",
+               "pattern", "pattern_status",
                "youngest_outcome", "outcome_status", "final_pattern", "final_outcome",
                "resolution", "adjudication_id", "reviewer_count"]
+    weighted = report.get("weighted_comparison")
+    weights = {}
+    if weighted:
+        columns.extend(["stratum", "weight", "weight_included", "weight_exclusion_reason"])
+        weights = {
+            (row["story_id"], row["revision"]): row for row in weighted["weights"]
+        }
     writer = csv.DictWriter(buffer, fieldnames=columns, extrasaction="ignore", lineterminator="\n")
     writer.writeheader()
     for row in report["story_results"]:
+        output = dict(row)
+        if weighted:
+            weight_row = weights[(row["story_id"], row["revision"])]
+            stratum = weight_row["stratum"]
+            output.update({
+                "stratum": " | ".join((stratum["tradition"], stratum["source_kind"],
+                                       stratum["material_period"])),
+                "weight": weight_row["weight"],
+                "weight_included": weight_row["included"],
+                "weight_exclusion_reason": weight_row["exclusion_reason"] or "",
+            })
         writer.writerow({key: _spreadsheet_safe(value) if isinstance(value, str) else value
-                         for key, value in row.items()})
+                         for key, value in output.items()})
     return _atomic_write(path, buffer.getvalue(), overwrite)
 
 
